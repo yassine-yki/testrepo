@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Questions pour un Champion</title>
+
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏆</text></svg>">
+
+    <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js"></script>
+
+    <!-- Stylesheets — order matters: base defines tokens & primitives, app layers screens. -->
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+<div class="app">
+
+    <!-- ════════════════════════════════════════════════════════
+         HOME SCREEN
+         ════════════════════════════════════════════════════════ -->
+    <div id="homeScreen" class="screen active">
+
+        <nav class="nav">
+            <div class="brand">Questions <em>pour</em> un Champion</div>
+            <div class="nav__right">
+                <button class="login-pill" id="profileToggleBtn" onclick="toggleAuthCard(event)">
+                    <span class="login-pill__avatar">
+                        <img id="homeAvatarImg" src="" alt="" style="display:none;" onload="this.style.display='block'; this.nextElementSibling.style.display='none';">
+                        <svg id="homeAvatarFallback" width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M230.92,212c-15.23-26.33-38.7-45.21-66.09-54.16a72,72,0,1,0-73.66,0C63.78,166.78,40.31,185.66,25.08,212a8,8,0,1,0,13.85,8c18.84-32.56,52.14-52,89.07-52s70.23,19.44,89.07,52a8,8,0,1,0,13.85-8Z"/></svg>
+                    </span>
+                    <span id="welcomeName">Se connecter</span>
+                </button>
+                <button class="icon-btn icon-btn--ghost" onclick="openSettings()" title="Réglages" aria-label="Réglages">
+                    <svg width="22" height="22" viewBox="0 0 256 256" fill="currentColor"><path opacity="0.3" d="M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Z"/><path d="M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160ZM229.71,109l-26.6-3.79a82.61,82.61,0,0,0-5.55-13.34l16.13-21.49a8,8,0,0,0-.73-10.4L195.59,42.94a8,8,0,0,0-10.41-.73L163.7,58.34a82.21,82.21,0,0,0-13.34-5.55L146.57,26.18A8,8,0,0,0,138.66,20H117.34a8,8,0,0,0-7.91,6.18l-3.79,26.61a82.61,82.61,0,0,0-13.34,5.55L70.81,42.21a8,8,0,0,0-10.4.73L42.94,60.41a8,8,0,0,0-.73,10.41L58.34,92.3a82.21,82.21,0,0,0-5.55,13.34L26.18,109.43A8,8,0,0,0,20,117.34v21.32a8,8,0,0,0,6.18,7.91l26.61,3.79a82.61,82.61,0,0,0,5.55,13.34L42.21,185.19a8,8,0,0,0,.73,10.4l17.55,17.55a8,8,0,0,0,10.41.73L92.3,197.66a82.21,82.21,0,0,0,13.34,5.55l3.79,26.6A8,8,0,0,0,117.34,236h21.32a8,8,0,0,0,7.91-6.18l3.79-26.6a82.61,82.61,0,0,0,13.34-5.55l21.49,16.13a8,8,0,0,0,10.4-.73l17.55-17.55a8,8,0,0,0,.73-10.41L197.66,163.7a82.21,82.21,0,0,0,5.55-13.34l26.6-3.79A8,8,0,0,0,236,138.66V117.34A8,8,0,0,0,229.71,109Z"/></svg>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Auth card (floating panel; JS toggles .visible) -->
+        <div id="authCard" class="auth-card">
+            <div class="auth-card-header">
+                <span class="auth-card-title">Votre compte</span>
+                <button class="auth-card-close" onclick="closeAuthCard()" aria-label="Fermer">
+                    <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></svg>
+                </button>
+            </div>
+
+            <div id="authSection" class="auth-section">
+                <div class="auth-tabs">
+                    <button class="auth-tab active" onclick="showAuthTab('login', event)">Connexion</button>
+                    <button class="auth-tab" onclick="showAuthTab('register', event)">Inscription</button>
+                </div>
+
+                <div id="loginForm" class="auth-form">
+                    <input type="text" id="loginUsername" placeholder="Nom d'utilisateur" class="field field--sm" autocomplete="username">
+                    <input type="password" id="loginPassword" placeholder="Mot de passe" class="field field--sm" autocomplete="current-password" onkeydown="if(event.key==='Enter')handleLogin()">
+                    <button class="btn btn--primary btn--md" style="width:100%;" onclick="handleLogin()">Se connecter</button>
+                </div>
+
+                <div id="registerForm" class="auth-form" style="display:none;">
+                    <input type="text" id="registerUsername" placeholder="Choisir un nom d'utilisateur" class="field field--sm" autocomplete="username">
+                    <input type="password" id="registerPassword" placeholder="Mot de passe" class="field field--sm" autocomplete="new-password" oninput="updatePasswordStrength(this.value)">
+                    <div class="password-strength"><div class="password-strength-bar" id="passwordStrengthBar"></div></div>
+                    <input type="password" id="registerPasswordConfirm" placeholder="Confirmer le mot de passe" class="field field--sm" autocomplete="new-password" onkeydown="if(event.key==='Enter')handleRegister()">
+                    <button class="btn btn--primary btn--md" style="width:100%;" onclick="handleRegister()">Créer un compte</button>
+                </div>
+
+                <div id="authError" class="auth-error"></div>
+
+                <div class="auth-divider"><span>ou</span></div>
+
+                <button class="btn btn--ghost btn--md" style="width:100%;" onclick="playAsGuest()">
+                    <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M230.92,212c-15.23-26.33-38.7-45.21-66.09-54.16a72,72,0,1,0-73.66,0C63.78,166.78,40.31,185.66,25.08,212a8,8,0,1,0,13.85,8c18.84-32.56,52.14-52,89.07-52s70.23,19.44,89.07,52a8,8,0,1,0,13.85-8Z"/></svg>
+                    Jouer en invité
+                </button>
+            </div>
+
+            <div id="profileSection" class="profile-section" style="display:none;">
+                <div class="profile-avatar-ring">
+                    <img id="profileAvatar" src="" alt="" class="profile-avatar" onerror="this.style.display='none'">
+                </div>
+                <span id="usernameDisplay" class="profile-username">Joueur</span>
+                <div id="playerStatsDisplay" class="profile-stats"></div>
+                <button class="btn btn--ghost btn--md" style="width:100%;" onclick="logoutPlayer()">
+                    <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M124,216a8,8,0,0,1-8,8H48a16,16,0,0,1-16-16V48A16,16,0,0,1,48,32h68a8,8,0,0,1,0,16H48V208h68A8,8,0,0,1,124,216Zm109.66-93.66-40-40a8,8,0,0,0-11.32,11.32L208.69,120H104a8,8,0,0,0,0,16H208.69l-26.35,26.34a8,8,0,0,0,11.32,11.32l40-40A8,8,0,0,0,233.66,122.34Z"/></svg>
+                    Déconnexion
+                </button>
+            </div>
+        </div>
+
+        <div class="home-hero">
+            <h1 class="display">Prêt(e) à <em>jouer</em> ?</h1>
+            <p class="body">Le buzzer, l'élimination par manche, mille questions. Choisissez votre porte.</p>
+        </div>
+
+        <div class="home-doors">
+
+            <button class="door door--solo" onclick="showSoloSetup()">
+                <div>
+                    <span class="pill pill--tertiary">
+                        <svg width="11" height="11" viewBox="0 0 256 256" fill="currentColor"><path d="M243.81,90.36a16,16,0,0,0-14.79-9.85H184.69L154.13,21.46a16,16,0,0,0-28.26,0L95.31,80.51H50.94A16,16,0,0,0,36.16,90.36a16.16,16.16,0,0,0,3.06,17.46l31.17,32.61L57.13,191.27a16.16,16.16,0,0,0,21,18.65L128,189.62l49.9,20.3a16,16,0,0,0,21.05-18.65L185.61,140.43l31.17-32.61A16.16,16.16,0,0,0,243.81,90.36Z"/></svg>
+                        Maîtrise
+                    </span>
+                    <h2 class="door__title" data-translate="soloMode">Solo</h2>
+                    <p class="door__desc">Affûtez votre culture, battez vos records, et passez les manches sans la pression du buzzer.</p>
+                </div>
+
+                <div class="door__graphic">
+                    <svg width="120" height="120" viewBox="0 0 256 256" fill="currentColor"><path d="M239.43,67.21c-5.59-11.19-17-23-39-25.32-15.32-1.63-32.62,3.06-46.43,7.93a16.06,16.06,0,0,1-11.94,0C128.21,45,110.91,40.26,95.59,41.89c-22,2.32-33.43,14.13-39,25.32C46.6,87.34,57,116.27,93.91,160.13c17.16,20.39,34.91,36.6,42.62,43.51a16,16,0,0,0,21.32,0c7.7-6.91,25.45-23.12,42.61-43.51C237.39,116.27,247.77,87.34,239.43,67.21Z"/></svg>
+                </div>
+
+                <div class="door__footer">
+                    <span class="btn btn--primary btn--md">
+                        Jouer en solo
+                        <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></svg>
+                    </span>
+                </div>
+            </button>
+
+            <button class="door door--multi" onclick="showMultiMode()">
+                <div>
+                    <span class="pill pill--secondary">
+                        <svg width="11" height="11" viewBox="0 0 256 256" fill="currentColor"><path d="M117.25,157.92a60,60,0,1,0-66.5,0A95.83,95.83,0,0,0,3.53,195.63a8,8,0,1,0,13.4,8.74,80,80,0,0,1,134.14,0,8,8,0,0,0,13.4-8.74A95.83,95.83,0,0,0,117.25,157.92Z"/></svg>
+                        Arène
+                    </span>
+                    <h2 class="door__title" data-translate="multiplayerMode">Multijoueur</h2>
+                    <p class="door__desc">Affrontez vos amis ou la communauté. Bonnes réponses, mauvaises réponses, éliminations. Le dernier debout gagne.</p>
+                </div>
+
+                <div class="door__avatars">
+                    <div class="door__avatar-bubble mini-av--coral">M</div>
+                    <div class="door__avatar-bubble mini-av--sky">A</div>
+                    <div class="door__avatar-bubble mini-av--amber">L</div>
+                    <div class="door__avatar-more">+12</div>
+                </div>
+
+                <div class="door__footer">
+                    <span class="btn btn--dark btn--md">
+                        Entrer dans l'arène
+                        <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></svg>
+                    </span>
+                    <span class="live-dot">15 parties publiques en cours</span>
+                </div>
+            </button>
+
+        </div>
+
+        <div class="home-tiles">
+            <button class="home-tile" onclick="showGlobalLeaderboard()">
+                <span class="home-tile__icon">
+                    <svg width="22" height="22" viewBox="0 0 256 256" fill="#9C3B3E"><path d="M232,64H208V48a16,16,0,0,0-16-16H64A16,16,0,0,0,48,48V64H24A16,16,0,0,0,8,80v32a56.06,56.06,0,0,0,56,56h6.83A88,88,0,0,0,120,212.27V232H88a8,8,0,0,0,0,16h80a8,8,0,0,0,0-16H136V212.27A88,88,0,0,0,185.17,168H192a56.06,56.06,0,0,0,56-56V80A16,16,0,0,0,232,64ZM24,112V80H48v72A40,40,0,0,1,24,112ZM232,112a40,40,0,0,1-24,36.66V80h24Z"/></svg>
+                </span>
+                <span>
+                    <span class="home-tile__label">Global</span>
+                    <span class="home-tile__name" data-translate="globalLeaderboard">Classement</span>
+                </span>
+            </button>
+
+            <button class="home-tile" onclick="openDressingRoom()">
+                <span class="home-tile__icon">
+                    <svg width="22" height="22" viewBox="0 0 256 256" fill="#2C673C"><path d="M229.65,98.21,210.31,86.6,201,65.21A14,14,0,0,0,188.4,57H148.92L138.6,38.94a14,14,0,0,0-21.2,0L107.08,57H67.6A14,14,0,0,0,55,65.21L45.69,86.6,26.35,98.21A14,14,0,0,0,20,110.21v35.58a14,14,0,0,0,6.35,12L45.69,169.4,55,190.79A14,14,0,0,0,67.6,199h39.48l10.32,18.06a14,14,0,0,0,21.2,0L148.92,199H188.4A14,14,0,0,0,201,190.79l9.34-21.39,19.34-11.61a14,14,0,0,0,6.32-12V110.21A14,14,0,0,0,229.65,98.21Z"/></svg>
+                </span>
+                <span>
+                    <span class="home-tile__label">Avatar</span>
+                    <span class="home-tile__name" data-translate="avatarStudio">Vestiaire</span>
+                </span>
+            </button>
+
+            <button class="home-tile" onclick="showHistory()">
+                <span class="home-tile__icon">
+                    <svg width="22" height="22" viewBox="0 0 256 256" fill="#2A6082"><path d="M136,80v43.47l36.12,21.67a8,8,0,0,1-8.24,13.72l-40-24A8,8,0,0,1,120,128V80a8,8,0,0,1,16,0Zm-8-56A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Z"/></svg>
+                </span>
+                <span>
+                    <span class="home-tile__label">Vos parties</span>
+                    <span class="home-tile__name">Historique</span>
+                </span>
+            </button>
+
+            <button class="home-tile" onclick="showHelp()">
+                <span class="home-tile__icon">
+                    <svg width="22" height="22" viewBox="0 0 256 256" fill="#615B4C"><path d="M140,180a12,12,0,1,1-12-12A12,12,0,0,1,140,180ZM128,72c-22.06,0-40,16.15-40,36a8,8,0,0,0,16,0c0-11,10.77-20,24-20s24,9,24,20-10.77,20-24,20a8,8,0,0,0-8,8v8a8,8,0,0,0,16,0v-.72c18.31-3.62,32-17.84,32-35.28C168,88.15,150.06,72,128,72Zm104,56A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></svg>
+                </span>
+                <span>
+                    <span class="home-tile__label">Règles</span>
+                    <span class="home-tile__name">Aide</span>
+                </span>
+            </button>
+        </div>
+
+    </div>
+
+
+    <!-- ════════════════════════════════════════════════════════
+         DRESSING ROOM
+         ════════════════════════════════════════════════════════ -->
+    <div id="dressingRoomScreen" class="screen">
+
+        <div class="crumb">
+            <button class="icon-btn" onclick="closeDressingRoom()" aria-label="Retour">
+                <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"/></svg>
+            </button>
+            <span class="crumb__text">Accueil · <b>Vestiaire</b></span>
+        </div>
+
+        <div class="home-hero">
+            <h1 class="headline">Habillez votre <em>avatar</em></h1>
+            <p class="body">Choisissez un visage, une coupe, un teint.</p>
+        </div>
+
+        <div class="dressing-grid">
+
+            <div class="dressing-preview">
+                <div class="preview-avatar-wrap">
+                    <div class="preview-avatar">
+                        <img id="dressingAvatarImg" src="" alt="Aperçu de l'avatar">
+                    </div>
+                </div>
+
+                <button class="btn btn--secondary btn--md" onclick="randomizeAvatar()">
+                    <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M237.66,178.34a8,8,0,0,1,0,11.32l-24,24A8,8,0,0,1,200,208V192H184a8,8,0,0,1-6.4-3.2L72.8,48H40a8,8,0,0,1,0-16H76.8a8,8,0,0,1,6.4,3.2l104.8,140H200V160a8,8,0,0,1,13.66-5.66Z"/></svg>
+                    <span data-translate="randomize">Aléatoire</span>
+                </button>
+            </div>
+
+            <div class="dressing-options">
+
+                <!-- Tabs are kept for JS compatibility but visually use option-group containers -->
+                <div class="avatar-category-tabs" id="categoryTabs"></div>
+                <div id="avatarOptionsContainer"></div>
+
+                <div class="dressing-save-bar">
+                    <button class="btn btn--ghost btn--md" onclick="closeDressingRoom()" data-translate="back">Annuler</button>
+                    <button class="btn btn--primary btn--md" onclick="saveAvatar()">
+                        <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>
+                        <span data-translate="save">Sauvegarder</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ════════════════════════════════════════════════════════
+         SOLO SETUP
+         ════════════════════════════════════════════════════════ -->
+    <div id="soloSetupScreen" class="screen">
+
+        <div class="crumb">
+            <button class="icon-btn" onclick="showHome()" aria-label="Retour">
+                <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"/></svg>
+            </button>
+            <span class="crumb__text">Accueil · <b>Partie solo</b></span>
+        </div>
+
+        <div class="setup-hero">
+            <h1 class="headline">Préparez la <em>partie</em></h1>
+            <p class="body">Choisissez vos sujets. Vous pouvez en sélectionner plusieurs.</p>
+        </div>
+
+        <div class="setup-grid">
+
+            <div class="card card--strong card--lg">
+                <span class="field-label">Votre nom</span>
+                <input type="text" id="soloName" class="field" placeholder="Tapez votre nom…">
+
+                <span class="field-label" style="margin-top: 24px;">Sujets</span>
+                <div class="subjects" id="soloSubjects">
+                    <!-- Populated by JS via renderSoloSubjects() -->
+                </div>
+
+                <button class="toggle-all btn-toggle-all" onclick="toggleAllSoloSubjects()">
+                    <svg width="13" height="13" viewBox="0 0 256 256" fill="currentColor"><path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>
+                    Tout (dé)sélectionner
+                </button>
+            </div>
+
+            <div class="setup-right">
+                <div class="ai-card">
+                    <div class="ai-card__graphic">
+                        <svg width="80" height="80" viewBox="0 0 256 256" fill="currentColor"><path d="M197.58,129.06l-51.61-19-19-51.65a15.92,15.92,0,0,0-29.88,0L78.07,110l-51.65,19a15.92,15.92,0,0,0,0,29.88L78,178l19,51.62a15.92,15.92,0,0,0,29.88,0l19-51.61,51.65-19a15.92,15.92,0,0,0,0-29.88Z"/></svg>
+                    </div>
+                    <div>
+                        <span class="field-label">Catégorie sur-mesure</span>
+                        <h3>Inventez un <em>sujet</em></h3>
+                        <p>Tapez ce qui vous intéresse — l'IA prépare des questions.</p>
+                        <input type="text" id="customCategoryInput" class="field field--sm" placeholder="Ex : Pinot noir, Cinéma français des années 60…">
+                        <p class="ai-card__meta">Optionnel · 10 questions générées</p>
+                    </div>
+                </div>
+
+                <button class="btn btn--primary btn--xl" onclick="startSoloGame()">
+                    <span data-translate="startGame">Commencer la partie</span>
+                    <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M232.4,114.49,88.32,26.35a16,16,0,0,0-16.2-.3A15.86,15.86,0,0,0,64,39.87V216.13A15.94,15.94,0,0,0,80,232a16.07,16.07,0,0,0,8.36-2.35L232.4,141.51a15.81,15.81,0,0,0,0-27Z"/></svg>
+                </button>
+                <p class="setup-counter">15 questions · environ <b>8 minutes</b></p>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ════════════════════════════════════════════════════════
+         SOLO GAME (same structure as multiplayer Game screen)
+         ════════════════════════════════════════════════════════ -->
+    <div id="soloGameScreen" class="screen">
+        <div class="game-top-progress"><div class="game-top-progress__fill" id="soloProgressFill"></div></div>
+
+        <div class="game-frame">
+            <!-- Solo top bar: question number left, score right -->
+            <div class="game-header">
+                <span class="pill pill--neutral pill--md">Question <b id="soloQuestionNumber">1 / 15</b></span>
+                <div class="game-header__brand">Questions <em>pour</em> un Champion</div>
+                <span class="pill pill--primary pill--md">Score · <b id="soloScore"><span class="score-value">0</span></b></span>
+            </div>
+
+            <div class="game-stage" style="max-width: 760px; margin: 0 auto;">
+
+                <div class="question-card">
+                    <div class="question-float">
+                        <div class="countdown">
+                            <svg viewBox="0 0 112 112">
+                                <circle class="countdown__track" cx="56" cy="56" r="50" fill="none" stroke-width="10"/>
+                                <circle class="countdown__fill" id="soloCountdownFill" cx="56" cy="56" r="50" fill="none" stroke-width="10" stroke-linecap="round" stroke-dasharray="314.16" stroke-dashoffset="0"/>
+                            </svg>
+                            <div class="countdown__inner">
+                                <span class="countdown__num countdown-number" id="soloTimer">15</span>
+                                <span class="countdown__label">sec.</span>
+                            </div>
+                        </div>
+                        <span class="question-pill" id="soloQuestionBadge">Question <span class="question-value">1 / 15</span></span>
+                    </div>
+
+                    <p class="question-text question-value" id="soloQuestionText">Chargement…</p>
+                    <div id="soloQuestionImage" style="display:none; margin-top: 20px;"><img alt="" style="max-width: 100%; border-radius: 16px;"></div>
+                </div>
+
+                <div class="options" id="soloOptionsBox"></div>
+
+                <div id="soloMessageBox" class="game-toast"></div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ════════════════════════════════════════════════════════
+         MULTI MODE PICKER
+         ════════════════════════════════════════════════════════ -->
+    <div id="multiModeScreen" class="screen">
+
+        <div class="crumb">
+            <button class="icon-btn" onclick="showHome()" aria-label="Retour">
+                <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"/></svg>
+            </button>
+            <span class="crumb__text">Accueil · <b>Multijoueur</b></span>
+        </div>
+
+        <div class="setup-hero">
+            <h1 class="headline">Mode <em>multijoueur</em></h1>
+            <p class="body">Créez une nouvelle partie ou rejoignez-en une avec un code.</p>
+        </div>
+
+        <div class="modes">
+            <button class="mode-card" onclick="showCreateMulti()">
+                <div>
+                    <span class="pill pill--primary">
+                        <svg width="11" height="11" viewBox="0 0 256 256" fill="currentColor"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"/></svg>
+                        Nouvelle partie
+                    </span>
+                    <h3 class="mode-card__title">Créer une partie</h3>
+                    <p class="mode-card__desc">Choisissez le format, invitez vos amis avec un code, et lancez quand vous êtes prêt(e).</p>
+                </div>
+                <div class="mode-card__graphic">
+                    <svg width="92" height="92" viewBox="0 0 256 256" fill="currentColor"><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32Zm-40,92H136v32a8,8,0,0,1-16,0V124H88a8,8,0,0,1,0-16h32V76a8,8,0,0,1,16,0v32h32a8,8,0,0,1,0,16Z"/></svg>
+                </div>
+                <div class="mode-card__foot">
+                    Continuer
+                    <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></svg>
+                </div>
+            </button>
+
+            <button class="mode-card" onclick="showJoinMulti()">
+                <div>
+                    <span class="pill pill--tertiary">
+                        <svg width="11" height="11" viewBox="0 0 256 256" fill="currentColor"><path d="M141.66,133.66l-40,40a8,8,0,0,1-11.32-11.32L116.69,136H24a8,8,0,0,1,0-16h92.69L90.34,93.66a8,8,0,0,1,11.32-11.32l40,40A8,8,0,0,1,141.66,133.66ZM200,32H136a8,8,0,0,0,0,16h56V208H136a8,8,0,0,0,0,16h64a8,8,0,0,0,8-8V40A8,8,0,0,0,200,32Z"/></svg>
+                        Avec un code
+                    </span>
+                    <h3 class="mode-card__title">Rejoindre</h3>
+                    <p class="mode-card__desc">Entrez le code d'une partie privée, ou choisissez une partie publique en cours.</p>
+                </div>
+                <div class="mode-card__graphic">
+                    <svg width="92" height="92" viewBox="0 0 256 256" fill="currentColor"><path d="M117.25,157.92a60,60,0,1,0-66.5,0A95.83,95.83,0,0,0,3.53,195.63a8,8,0,1,0,13.4,8.74,80,80,0,0,1,134.14,0,8,8,0,0,0,13.4-8.74A95.83,95.83,0,0,0,117.25,157.92Z"/></svg>
+                </div>
+                <div class="mode-card__foot">
+                    Continuer
+                    <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></svg>
+                </div>
+            </button>
+        </div>
+
+    </div>
+
+
+    <!-- ════════════════════════════════════════════════════════
+         CREATE MULTI ROOM
+         ════════════════════════════════════════════════════════ -->
+    <div id="createMultiScreen" class="screen">
+
+        <div class="crumb">
+            <button class="icon-btn" onclick="showMultiMode()" aria-label="Retour">
+                <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"/></svg>
+            </button>
+            <span class="crumb__text">Multijoueur · <b>Créer une partie</b></span>
+        </div>
+
+        <div class="setup-hero">
+            <h1 class="headline">Créez la <em>salle</em></h1>
+            <p class="body">Vos amis arriveront avec ce code. Le démarrage se fait quand vous êtes prêt(e).</p>
+        </div>
+
+        <div class="create-grid">
+
+            <div class="card card--strong card--lg">
+
+                <span class="field-label">Format</span>
+                <div class="seg" style="width:100%;">
+                    <button class="seg__btn is-on" id="gameModeFF" onclick="selectGameMode('ffa')" style="flex:1;">Chacun pour soi</button>
+                    <button class="seg__btn" id="gameModeTeam" onclick="selectGameMode('team')" style="flex:1;">En équipe (2v2)</button>
+                </div>
+                <p class="mode-hint" id="gameModeHint">2 à 4 joueurs. Chacun joue pour soi — le meilleur score gagne.</p>
+
+                <span class="field-label" style="margin-top: 22px;">Votre nom</span>
+                <input type="text" id="createName" class="field" placeholder="Votre nom">
+
+                <span class="field-label" style="margin-top: 22px;">Visibilité</span>
+                <div class="seg">
+                    <button class="seg__btn is-on" id="visibilityPublic" onclick="selectVisibility('public')">Publique</button>
+                    <button class="seg__btn" id="visibilityPrivate" onclick="selectVisibility('private')">Privée</button>
+                </div>
+
+                <div style="height: 22px;"></div>
+
+                <!-- AI category embedded -->
+                <div class="ai-block">
+                    <div class="ai-block__head">
+                        <div class="ai-block__title">
+                            <span class="ai-block__spark">
+                                <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor"><path d="M197.58,129.06l-51.61-19-19-51.65a15.92,15.92,0,0,0-29.88,0L78.07,110l-51.65,19a15.92,15.92,0,0,0,0,29.88L78,178l19,51.62a15.92,15.92,0,0,0,29.88,0l19-51.61,51.65-19a15.92,15.92,0,0,0,0-29.88Z"/></svg>
+                            </span>
+                            <div>
+                                <div class="ai-block__name">Catégorie sur-mesure</div>
+                                <div class="ai-block__help">L'IA prépare des questions sur le sujet de votre choix</div>
+                            </div>
+                        </div>
+                        <button class="toggle is-off" id="aiToggleMulti" onclick="toggleAICategory()" aria-label="Activer la catégorie IA"></button>
+                    </div>
+                    <input type="text" id="customCategoryInputMulti" class="field field--sm" placeholder="Ex : Pinot noir, Cinéma français des années 60…">
+                </div>
+
+                <div style="height: 10px;"></div>
+
+                <div class="row-block">
+                    <div>
+                        <div class="row-block__name">Sujets</div>
+                        <div class="row-block__help" id="createSubjectsCount">Tous les sujets</div>
+                    </div>
+                    <button class="row-block__action" onclick="openSubjectsPicker()">Modifier</button>
+                </div>
+
+                <!-- Classic subjects picker (toggled by "Modifier") -->
+                <div id="createSubjects" class="subjects hidden" style="margin-top: 12px;"></div>
+            </div>
+
+            <div class="roomcode-card">
+                <div>
+                    <p class="roomcode-card__label">Code de la partie</p>
+                    <p class="roomcode-card__val" id="createCode">——————</p>
+                    <p class="roomcode-card__meta">Partagez ce code · expire dans 30 min</p>
+                </div>
+                <div class="roomcode-card__share">
+                    <button class="roomcode-share-btn" id="copyCodeBtn" onclick="copyRoomCode()">
+                        <svg id="copyIcon" width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160ZM208,160H176V88a8,8,0,0,0-8-8H96V48H208Z"/></svg>
+                        Copier
+                    </button>
+                    <button class="roomcode-share-btn" onclick="shareRoomLink()">
+                        <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M176,160a39.71,39.71,0,0,0-28.62,12.09l-46.1-29.63a39.8,39.8,0,0,0,0-28.92l46.1-29.63a40,40,0,1,0-8.65-13.45l-46.1,29.63a40,40,0,1,0,0,55.82l46.1,29.63A40,40,0,1,0,176,160Z"/></svg>
+                        Partager
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <div style="padding: 18px 48px 0;">
+            <button class="btn btn--primary btn--xl" style="width: 100%;" onclick="createRoom()">
+                <span data-translate="createRoom">Créer la partie</span>
+                <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></svg>
+            </button>
+        </div>
+
+    </div>
+
+
+    <!-- ════════════════════════════════════════════════════════
+         JOIN MULTI ROOM
+         ════════════════════════════════════════════════════════ -->
+    <div id="joinMultiScreen" class="screen">
+
+        <div class="crumb">
+            <button class="icon-btn" onclick="showMultiMode()" aria-label="Retour">
+                <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"/></svg>
+            </button>
+            <span class="crumb__text">Multijoueur · <b>Rejoindre</b></span>
+        </div>
+
+        <div class="setup-hero">
+            <h1 class="headline">Rejoignez une <em>partie</em></h1>
+            <p class="body">Avec un code, vous entrez directement. Sinon, choisissez une partie publique en cours.</p>
+        </div>
+
+        <div class="join-grid">
+
+            <div class="card card--strong card--lg">
+                <span class="field-label">Code de la partie</span>
+                <input type="text" id="joinCode" class="field" placeholder="KX-7729" maxlength="8" style="text-align: center; letter-spacing: 0.1em; font-variant-numeric: tabular-nums;">
+
+                <div style="height: 18px;"></div>
+
+                <span class="field-label">Votre nom</span>
+                <input type="text" id="joinName" class="field" placeholder="Tapez votre nom…">
+
+                <!-- Team selection (visible only for team mode) -->
+                <div id="teamSelectionDiv" class="hidden" style="margin-top: 18px;">
+                    <span class="field-label">Choisissez une équipe</span>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <button class="btn btn--ghost btn--md" id="joinTeamRed" onclick="selectJoinTeam('red')" style="background: var(--primary-tint); color: var(--primary);">
+                            <span style="font-weight: 800;">Rouge</span>
+                            <span id="redCount" style="opacity: 0.7; margin-left: 4px;">0/2</span>
+                        </button>
+                        <button class="btn btn--ghost btn--md" id="joinTeamBlue" onclick="selectJoinTeam('blue')" style="background: var(--tertiary-soft); color: var(--tertiary-darkest);">
+                            <span style="font-weight: 800;">Bleu</span>
+                            <span id="blueCount" style="opacity: 0.7; margin-left: 4px;">0/2</span>
+                        </button>
+                    </div>
+                </div>
+
+                <button class="btn btn--primary btn--xl" onclick="joinRoom()" style="width: 100%; margin-top: 22px;">
+                    <span data-translate="joinRoom">Rejoindre</span>
+                    <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></svg>
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="row row--between" style="margin-bottom: 14px;">
+                    <span class="field-label" style="margin: 0;">Parties publiques</span>
+                    <span class="live-dot">En direct</span>
+                </div>
+                <div class="public-list" id="publicRoomsList">
+                    <!-- Populated by JS via renderPublicRooms() -->
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ════════════════════════════════════════════════════════
+         LOBBY (waiting room)
+         ════════════════════════════════════════════════════════ -->
+    <div id="lobbyScreen" class="screen">
+
+        <div class="nav">
+            <div class="row row--gap-md">
+                <button class="icon-btn" onclick="leaveLobby()" aria-label="Quitter">
+                    <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"/></svg>
+                </button>
+                <span class="crumb__text">Multijoueur · <b>Salon d'attente</b></span>
+            </div>
+
+            <div class="lobby-roomcode">
+                <span class="lobby-roomcode__lbl">Code</span>
+                <span class="lobby-roomcode__val" id="roomCode">——————</span>
+                <button class="icon-btn icon-btn--sm" onclick="copyRoomCode()" aria-label="Copier">
+                    <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160ZM208,160H176V88a8,8,0,0,0-8-8H96V48H208Z"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="setup-hero">
+            <h1 class="headline">Le salon <em>se remplit</em></h1>
+            <p class="body" id="lobbySubtitle">En attente des joueurs. Activez votre micro depuis votre siège.</p>
+        </div>
+
+        <div class="lobby-grid">
+
+            <div class="seats-card">
+                <div class="seats-card__head">
+                    <span class="seats-card__title">Les joueurs</span>
+                    <span class="seats-card__count"><b id="lobbyPlayerCount">0</b> / <span id="lobbyPlayerMax">4</span></span>
+                </div>
+                <div class="seats" id="playersList">
+                    <!-- Populated by JS via renderLobbyPlayers() -->
+                </div>
+            </div>
+
+            <div class="lobby-side">
+                <div class="side-card">
+                    <p class="side-card__label">Format</p>
+                    <div class="side-info-row">
+                        <span class="side-info-row__name">Mode</span>
+                        <span class="side-info-row__val" id="lobbyMode">—</span>
+                    </div>
+                    <div class="side-info-row">
+                        <span class="side-info-row__name">Visibilité</span>
+                        <span class="side-info-row__val" id="lobbyVisibility">—</span>
+                    </div>
+                    <div class="side-info-row">
+                        <span class="side-info-row__name">Sujets</span>
+                        <span class="side-info-row__val" id="lobbySubjectCount">—</span>
+                    </div>
+                </div>
+
+                <div class="voice-card">
+                    <div class="voice-card__head">
+                        <span class="voice-card__icon">
+                            <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M128,176a48.05,48.05,0,0,0,48-48V64a48,48,0,0,0-96,0v64A48.05,48.05,0,0,0,128,176Zm88-48a88,88,0,0,1-176,0,8,8,0,0,1,16,0,72,72,0,0,0,144,0,8,8,0,0,1,16,0Z"/></svg>
+                        </span>
+                        <div class="voice-card__body">
+                            <div class="voice-card__title">Chat vocal</div>
+                            <div class="voice-card__help">Activez votre micro depuis votre siège</div>
+                        </div>
+                        <span class="voice-card__count" id="voiceParticipants">0 actifs</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="lobby-actions lobby-actions--simple">
+            <span class="lobby-waiting" id="lobbyWaitingMsg">En attente d'au moins 2 joueurs…</span>
+            <button class="btn btn--primary btn--xl" id="startBtn" onclick="startGame()" style="display:none;">
+                <span data-translate="startGame">Lancer la partie</span>
+                <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor"><path d="M232.4,114.49,88.32,26.35a16,16,0,0,0-16.2-.3A15.86,15.86,0,0,0,64,39.87V216.13A15.94,15.94,0,0,0,80,232a16.07,16.07,0,0,0,8.36-2.35L232.4,141.51a15.81,15.81,0,0,0,0-27Z"/></svg>
+            </button>
+        </div>
+
+    </div>
+
+
+    <!-- ════════════════════════════════════════════════════════
+         GAME (multiplayer)
+         ════════════════════════════════════════════════════════ -->
+    <div id="gameScreen" class="screen">
+        <div class="game-top-progress"><div class="game-top-progress__fill" id="progressFill"></div></div>
+
+        <div class="game-frame">
+
+            <div class="game-header">
+                <div class="game-header__brand">Questions <em>pour</em> un Champion</div>
+                <div class="game-header__nav">
+                    <a href="#" class="is-active">Partie en cours</a>
+                    <a href="#" onclick="showGlobalLeaderboard(); return false;">Classement</a>
+                    <a href="#" onclick="openSettings(); return false;">Réglages</a>
+                </div>
+                <div class="game-header__avatar"><img src="" alt="" onerror="this.style.display='none'"></div>
+            </div>
+
+            <div class="game-main">
+
+                <!-- Players left rail (2 seats) -->
+                <div class="player-col" id="playersListLeft">
+                    <!-- Populated by JS via renderGamePlayers() -->
+                </div>
+
+                <!-- Center stage -->
+                <div class="game-stage">
+
+                    <div class="question-card">
+                        <div class="question-float">
+                            <div class="countdown">
+                                <svg viewBox="0 0 112 112">
+                                    <circle class="countdown__track" cx="56" cy="56" r="50" fill="none" stroke-width="10"/>
+                                    <circle class="countdown__fill" id="countdownFill" cx="56" cy="56" r="50" fill="none" stroke-width="10" stroke-linecap="round" stroke-dasharray="314.16" stroke-dashoffset="0"/>
+                                </svg>
+                                <div class="countdown__inner">
+                                    <span class="countdown__num countdown-number" id="timer">15</span>
+                                    <span class="countdown__label">sec.</span>
+                                </div>
+                            </div>
+                            <span class="question-pill" id="questionBadge">Question 1 / 15</span>
+                        </div>
+
+                        <p class="question-text question-value" id="questionText">Chargement…</p>
+                        <div id="questionImage" style="display:none; margin-top: 20px;"><img alt="" style="max-width: 100%; border-radius: 16px;"></div>
+                    </div>
+
+                    <!-- Round/question info hidden but kept for JS compatibility -->
+                    <div class="hidden">
+                        <span class="round-value" id="roundInfo"></span>
+                        <span id="questionNumber"></span>
+                    </div>
+
+                    <div class="options" id="optionsBox"></div>
+
+                    <!-- Buzzer -->
+                    <div class="buzzer-wrap">
+                        <button class="buzzer" id="buzzer" onclick="buzzerPressed()" aria-label="Buzzer">
+                            <span class="buzzer__ping"></span>
+                            <svg class="buzzer__icon" viewBox="0 0 256 256" fill="currentColor"><path d="M215.79,118.17a8,8,0,0,0-5-5.66L153.18,90.9l14.66-73.33a8,8,0,0,0-13.69-7l-112,120a8,8,0,0,0,3.43,13.13l57.62,21.57L88.16,238.5a8,8,0,0,0,13.69,7l112-120A8,8,0,0,0,215.79,118.17Z"/></svg>
+                            <span class="buzzer__text">Buzz !</span>
+                        </button>
+                        <p class="buzzer-key" id="keyHint">ou tapez <kbd>espace</kbd></p>
+                    </div>
+
+                    <!-- Avatar reaction overlay (JS) -->
+                    <div id="avatarReaction" class="hidden"></div>
+
+                    <!-- Message + scores boxes for JS-controlled state -->
+                    <div id="messageBox" class="game-toast"></div>
+                    <div id="scoresBox" class="hidden"></div>
+                </div>
+
+                <!-- Players right rail (2 seats) -->
+                <div class="player-col" id="playersListRight">
+                    <!-- Populated by JS via renderGamePlayers() -->
+                </div>
+
+            </div>
+
+            <!-- Legacy horizontal list kept hidden for JS compatibility -->
+            <div id="playersListHorizontal" class="hidden"></div>
+            <div id="statusText" class="hidden"></div>
+            <div id="teamScoresDiv" class="hidden"></div>
+        </div>
+    </div>
+
+
+    <!-- ════════════════════════════════════════════════════════
+         GAME OVER
+         ════════════════════════════════════════════════════════ -->
+    <div id="gameOverScreen" class="screen">
+        <div class="gameover-confetti">
+            <span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span>
+        </div>
+
+        <div class="nav">
+            <div class="row row--gap-md">
+                <button class="icon-btn" onclick="showHome()" aria-label="Retour">
+                    <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"/></svg>
+                </button>
+                <span class="crumb__text">Partie terminée</span>
+            </div>
+            <span class="room-pill">Salle · <b id="gameOverRoomCode">——————</b></span>
+        </div>
+
+        <div class="gameover-hero">
+            <div class="gameover-hero__lbl">
+                <svg width="13" height="13" viewBox="0 0 256 256" fill="currentColor"><path d="M232,64H208V48a16,16,0,0,0-16-16H64A16,16,0,0,0,48,48V64H24A16,16,0,0,0,8,80v32a56.06,56.06,0,0,0,56,56h6.83A88,88,0,0,0,120,212.27V232H88a8,8,0,0,0,0,16h80a8,8,0,0,0,0-16H136V212.27A88,88,0,0,0,185.17,168H192a56.06,56.06,0,0,0,56-56V80A16,16,0,0,0,232,64Z"/></svg>
+                Champion
+            </div>
+            <h1 class="winner-name" id="winnerBox">—</h1>
+        </div>
+
+        <!-- Podium -->
+        <div class="podium" id="podiumClubhouse">
+            <!-- Populated by JS -->
+        </div>
+
+        <!-- Scoreboard table -->
+        <div class="scoreboard">
+            <div class="sb-head">
+                <span>#</span>
+                <span>Joueur</span>
+                <span>Buzzes</span>
+                <span>Bonnes</span>
+                <span style="text-align:right;">Score</span>
+            </div>
+            <div id="finalScores"></div>
+        </div>
+
+        <div class="gameover-actions">
+            <button class="btn btn--primary btn--lg" onclick="showHome()">
+                <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor"><path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>
+                Nouvelle partie
+            </button>
+            <button class="btn btn--ghost btn--lg" onclick="showHome()">
+                <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor"><path d="M120,40H64A16,16,0,0,0,48,56V200a16,16,0,0,0,16,16h56a16,16,0,0,0,16-16V56A16,16,0,0,0,120,40Zm-4,160H68V56h48Z"/></svg>
+                Quitter
+            </button>
+        </div>
+    </div>
+
+
+    <!-- ════════════════════════════════════════════════════════
+         GLOBAL LEADERBOARD (existing JS overlay; keep stub)
+         ════════════════════════════════════════════════════════ -->
+    <div id="leaderboardList" class="hidden"></div>
+
+
+    <!-- ════════════════════════════════════════════════════════
+         MODALS
+         ════════════════════════════════════════════════════════ -->
+
+    <!-- Settings modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-head">
+                <h2>Vos <em>réglages</em></h2>
+                <button class="icon-btn icon-btn--ghost" onclick="closeSettings()" aria-label="Fermer">
+                    <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></svg>
+                </button>
+            </div>
+
+            <!-- Language -->
+            <div class="setting-row">
+                <span class="setting-row__icon">
+                    <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M247.43,128.2A112,112,0,1,0,128.21,239.43h.21A112.14,112.14,0,0,0,247.43,128.2Z"/></svg>
+                </span>
+                <div class="setting-row__body">
+                    <div class="setting-row__name">Langue</div>
+                    <div class="setting-row__help">L'interface et les questions</div>
+                </div>
+                <div class="seg">
+                    <button class="seg__btn is-on" onclick="selectLanguage('fr')">FR</button>
+                    <button class="seg__btn" onclick="selectLanguage('en')">EN</button>
+                </div>
+            </div>
+
+            <!-- Mute -->
+            <div class="setting-row">
+                <span class="setting-row__icon" id="muteIcon">
+                    <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M155.51,24.81a8,8,0,0,0-8.42.88L77.25,80H32A16,16,0,0,0,16,96v64a16,16,0,0,0,16,16H77.25l69.84,54.31A8,8,0,0,0,160,224V32A8,8,0,0,0,155.51,24.81Z"/></svg>
+                </span>
+                <div class="setting-row__body">
+                    <div class="setting-row__name">Son général</div>
+                    <div class="setting-row__help">Coupe tous les sons</div>
+                </div>
+                <button class="toggle" id="muteBtn" onclick="toggleMute()" aria-label="Couper le son"></button>
+            </div>
+
+            <!-- SFX -->
+            <div class="setting-row">
+                <span class="setting-row__icon" id="sfxIcon">
+                    <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M192,128a40,40,0,0,1-13,29.4,8,8,0,1,1-10.8-11.8A24,24,0,0,0,176,128a24,24,0,0,0-7.8-17.6,8,8,0,1,1,10.8-11.8A40,40,0,0,1,192,128Z"/></svg>
+                </span>
+                <div class="setting-row__body">
+                    <div class="setting-row__name">Effets sonores</div>
+                    <div class="setting-row__help" id="sfxStatus">Buzzer, bonnes/mauvaises réponses</div>
+                </div>
+                <div class="vol-slider">
+                    <input type="range" id="sfxVolumeSlider" min="0" max="100" value="70" style="width: 110px;">
+                    <button id="sfxToggleBtn" class="hidden" onclick="toggleSfx()"></button>
+                </div>
+            </div>
+
+            <!-- Music -->
+            <div class="setting-row">
+                <span class="setting-row__icon" id="musicIcon">
+                    <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M212.92,17.69a8,8,0,0,0-6.86-1.45l-128,32A8,8,0,0,0,72,56V176.37A40,40,0,1,0,88,208V110.25l112-28v75.12A40,40,0,1,0,216,192V24A8,8,0,0,0,212.92,17.69Z"/></svg>
+                </span>
+                <div class="setting-row__body">
+                    <div class="setting-row__name">Musique d'ambiance</div>
+                    <div class="setting-row__help" id="musicStatus">En lobby et entre les questions</div>
+                </div>
+                <button class="toggle is-off" id="musicToggleBtn" onclick="toggleMusic()" aria-label="Activer la musique"></button>
+            </div>
+
+            <!-- Buzzer key -->
+            <div class="setting-row">
+                <span class="setting-row__icon">
+                    <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M216,40H40A16,16,0,0,0,24,56V168a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Z"/></svg>
+                </span>
+                <div class="setting-row__body">
+                    <div class="setting-row__name">Touche du buzzer</div>
+                    <div class="setting-row__help">Cliquez pour reprogrammer</div>
+                </div>
+                <button class="key-chip" id="changeKeyBtn" onclick="startKeyCapture()">
+                    <kbd id="currentKeyDisplay">espace</kbd>
+                </button>
+            </div>
+
+            <p class="account-section-label">Compte</p>
+
+            <div class="account-row">
+                <div class="mini-av mini-av--lg mini-av--coral"><img id="profileAvatarSettings" src="" alt="" onerror="this.style.display='none'"></div>
+                <div style="flex:1;">
+                    <div class="account-row__name" id="accountUsername">Joueur</div>
+                    <div class="account-row__mail" id="accountStats">—</div>
+                </div>
+                <button class="account-row__logout" onclick="logoutPlayer()">Déconnexion</button>
+            </div>
+
+            <!-- Legacy elements kept hidden for JS compatibility (theme switcher, voice chat, advanced) -->
+            <div id="voiceIcon" class="hidden"></div>
+            <div id="voiceBtnText" class="hidden"></div>
+            <div id="joinVoiceBtn" class="hidden"></div>
+            <div id="volumeSlider" class="hidden"></div>
+            <div id="advancedOptionsPanel" class="hidden"></div>
+            <div id="advancedToggleIcon" class="hidden"></div>
+        </div>
+    </div>
+
+    <!-- AI Loading modal -->
+    <div id="aiLoadingModal" class="modal">
+        <div class="modal-content modal-content--sm ai-loading">
+            <div class="ai-loading__ring">
+                <div class="ai-loading__ring-inner">
+                    <svg width="32" height="32" viewBox="0 0 256 256" fill="currentColor"><path d="M197.58,129.06l-51.61-19-19-51.65a15.92,15.92,0,0,0-29.88,0L78.07,110l-51.65,19a15.92,15.92,0,0,0,0,29.88L78,178l19,51.62a15.92,15.92,0,0,0,29.88,0l19-51.61,51.65-19a15.92,15.92,0,0,0,0-29.88Z"/></svg>
+                </div>
+            </div>
+            <h2>L'IA prépare vos <em>questions</em></h2>
+            <p class="ai-loading__sub" id="aiLoadingText">Sujet : <b id="aiLoadingCategory">—</b></p>
+
+            <div class="progress"><div class="progress__fill" id="aiProgressFill" style="width: 0%;"></div></div>
+            <div class="progress__meta">
+                <span>Progression</span>
+                <span><b id="aiProgressCount">0</b> / 10 questions</span>
+            </div>
+
+            <button class="btn btn--ghost btn--sm" onclick="cancelAILoading()" style="margin-top: 22px;">Annuler</button>
+        </div>
+    </div>
+
+</div>
+
+<script src="/static/game.js"></script>
+<script src="/static/game-patches.js"></script>
+</body>
+</html>
